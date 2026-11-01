@@ -1,11 +1,7 @@
+import Link from "next/link";
+import { formatDate } from "../lib/dates";
 import type { Project } from "../lib/projects";
 import StatusBadge from "./StatusBadge";
-
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Unknown date";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
-}
 
 function ProjectCard({ project }: { project: Project }) {
   return (
@@ -45,16 +41,13 @@ function ProjectCard({ project }: { project: Project }) {
           Created{" "}
           <time dateTime={project.created_at}>{formatDate(project.created_at)}</time>
         </p>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled
-            className="rounded-md border border-gray-400/50 px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            View project
-          </button>
-          <span className="text-xs text-gray-500">Coming soon</span>
-        </div>
+        <Link
+          href={`/projects/${project.id}`}
+          aria-label={`View project ${project.name}`}
+          className="rounded-md border border-gray-400/50 px-3 py-1.5 text-sm font-medium hover:bg-gray-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        >
+          View project
+        </Link>
       </div>
     </article>
   );
