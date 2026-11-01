@@ -1,10 +1,21 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .database import init_db
 from .errors import register_error_handlers
+from .routers import projects
 
-app = FastAPI(title="HANDOVERIQ API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Runs once at startup: create any missing database tables.
+    init_db()
+    yield
+
+
+app = FastAPI(title="HANDOVERIQ API", version="0.1.0", lifespan=lifespan)
 
 # CORS: browsers block a page on localhost:3000 from calling localhost:8000
 # unless the backend explicitly allows that origin.
@@ -18,6 +29,7 @@ app.add_middleware(
 
 register_error_handlers(app)
 
+app.include_router(projects.router)
 
 @app.get("/api/health")
 def health() -> dict:
