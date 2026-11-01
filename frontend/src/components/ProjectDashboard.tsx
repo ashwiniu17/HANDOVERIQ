@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../lib/api";
 import { listProjects, type Project } from "../lib/projects";
+import { PRIMARY_BUTTON } from "./buttonStyles";
+import ProjectForm from "./ProjectForm";
 import ProjectList from "./ProjectList";
 
 type LoadState =
@@ -10,8 +12,14 @@ type LoadState =
   | { kind: "error"; message: string }
   | { kind: "ready"; projects: Project[] };
 
-const PRIMARY_BUTTON =
-  "inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-not-allowed disabled:opacity-50";
+/**
+ * A request to (re)load the list. Each new object triggers one new load and
+ * cancels the previous one. "silent" loads keep showing the current list.
+ */
+type LoadRequest = { id: number; silent: boolean };
+
+const SMALL_BUTTON =
+  "rounded-md border border-gray-400/60 px-3 py-1.5 text-sm font-medium hover:bg-gray-400/10";
 
 function SkeletonCards() {
   return (
@@ -40,7 +48,7 @@ function SkeletonCards() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="rounded-xl border border-dashed border-gray-400/50 px-6 py-14 text-center">
       <h3 className="text-lg font-semibold">No projects yet</h3>
@@ -48,12 +56,7 @@ function EmptyState() {
         Create your first project to start collecting knowledge and preparing a
         reliable handover.
       </p>
-      <button
-        type="button"
-        disabled
-        title="The create form arrives in the next step"
-        className={`${PRIMARY_BUTTON} mt-6`}
-      >
+      <button type="button" onClick={onCreate} className={`${PRIMARY_BUTTON} mt-6`}>
         Create Project
       </button>
     </div>
@@ -62,18 +65,35 @@ function EmptyState() {
 
 export default function ProjectDashboard() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
-  const [attempt, setAttempt] = useState(0);
+  const [request, setRequest] = useState<LoadRequest>({ id: 0, silent: false });
+  const [formOpen, setFormOpen] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
 
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef(false);
+
+  // The one place the list is loaded: first load, Retry, and the silent
+  // refresh after a project is created. The cleanup cancels an older request
+  // when a newer one starts (or when the page is left), and results from a
+  // cancelled request are ignored.
   useEffect(() => {
     const controller = new AbortController();
+    const { silent } = request;
 
     listProjects(controller.signal)
       .then((projects) => {
-        if (!controller.signal.aborted) setState({ kind: "ready", projects });
+        if (controller.signal.aborted) return;
+        setState({ kind: "ready", projects });
+        setRefreshFailed(false);
       })
       .catch((err: unknown) => {
-        // A request cancelled on purpose (leaving the page, or a retry) is not an error.
         if (controller.signal.aborted) return;
+        if (silent) {
+          // Keep showing the list we have; just tell the user it may be stale.
+          setRefreshFailed(true);
+          return;
+        }
         setState({
           kind: "error",
           message:
@@ -84,12 +104,55 @@ export default function ProjectDashboard() {
       });
 
     return () => controller.abort();
-  }, [attempt]);
+  }, [request]);
+
+  // After the form closes (cancel or success), put focus back on the Create button.
+  useEffect(() => {
+    if (!formOpen && restoreFocusRef.current) {
+      restoreFocusRef.current = false;
+      createButtonRef.current?.focus();
+    }
+  }, [formOpen]);
 
   function retry() {
     setState({ kind: "loading" });
-    setAttempt((n) => n + 1);
+    setRequest((previous) => ({ id: previous.id + 1, silent: false }));
   }
+
+  function refresh() {
+    setRequest((previous) => ({ id: previous.id + 1, silent: true }));
+  }
+
+  function openForm() {
+    setSuccess(null);
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    restoreFocusRef.current = true;
+    setFormOpen(false);
+  }
+
+  function handleCreated(project: Project) {
+    // Show the server's own response at once, then reconcile with the database.
+    setState((previous) =>
+      previous.kind === "ready"
+        ? {
+            kind: "ready",
+            projects: [
+              project,
+              ...previous.projects.filter((existing) => existing.id !== project.id),
+            ],
+          }
+        : previous
+    );
+    setSuccess(`Project “${project.name}” was created.`);
+    setRefreshFailed(false);
+    closeForm();
+    refresh();
+  }
+
+  const isReady = state.kind === "ready";
 
   return (
     <section aria-labelledby="projects-heading" className="space-y-5">
@@ -107,14 +170,62 @@ export default function ProjectDashboard() {
           )}
         </div>
         <button
+          ref={createButtonRef}
           type="button"
-          disabled
-          title="The create form arrives in the next step"
+          onClick={openForm}
+          disabled={!isReady || formOpen}
+          aria-expanded={formOpen}
           className={PRIMARY_BUTTON}
         >
           Create Project
         </button>
       </div>
+
+      {/* Always present, so screen readers reliably announce the message. */}
+      <p role="status" className="sr-only">
+        {success ?? ""}
+      </p>
+
+      {success && (
+        <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+            {success}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSuccess(null)}
+            className={`${SMALL_BUTTON} shrink-0`}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {refreshFailed && isReady && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
+        >
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            The project was created, but the list couldn’t be refreshed. What you
+            see below may be out of date.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setRefreshFailed(false);
+              refresh();
+            }}
+            className={`${SMALL_BUTTON} shrink-0`}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {formOpen && isReady && (
+        <ProjectForm onCreated={handleCreated} onCancel={closeForm} />
+      )}
 
       {state.kind === "loading" && <SkeletonCards />}
 
@@ -126,11 +237,7 @@ export default function ProjectDashboard() {
           <p className="font-medium text-red-700 dark:text-red-400">
             {state.message}
           </p>
-          <button
-            type="button"
-            onClick={retry}
-            className="mt-3 rounded-md border border-gray-400/60 px-3 py-1.5 text-sm font-medium hover:bg-gray-400/10"
-          >
+          <button type="button" onClick={retry} className={`${SMALL_BUTTON} mt-3`}>
             Retry
           </button>
         </div>
@@ -138,7 +245,7 @@ export default function ProjectDashboard() {
 
       {state.kind === "ready" &&
         (state.projects.length === 0 ? (
-          <EmptyState />
+          !formOpen && <EmptyState onCreate={openForm} />
         ) : (
           <ProjectList projects={state.projects} />
         ))}
