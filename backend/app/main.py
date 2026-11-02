@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import init_db
 from .errors import register_error_handlers
-from .routers import projects
+from .routers import documents, projects
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,6 +31,8 @@ app.add_middleware(
 register_error_handlers(app)
 
 app.include_router(projects.router)
+app.include_router(documents.router)
+
 
 @app.get("/api/health")
 def health() -> dict:

@@ -126,3 +126,28 @@ class ProjectRead(BaseModel):
     status: ProjectStatus
     created_at: UTCTimestamp
     updated_at: UTCTimestamp
+    
+
+# ---------------------------------------------------------------------------
+# Documents and chunks
+# ---------------------------------------------------------------------------
+class DocumentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    project_id: int
+    filename: str
+    file_type: str
+    size_bytes: int
+    char_count: int
+    chunk_count: int
+    created_at: UTCTimestamp
+
+
+class ChunkRead(BaseModel):
+    id: int
+    document_id: int
+    document_name: str
+    position: int
+    location: str
+    text: str
