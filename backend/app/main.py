@@ -7,6 +7,8 @@ from .config import settings
 from .database import init_db
 from .errors import register_error_handlers
 from .routers import documents, projects
+from .routers import handovers
+from .routers import demo
 
 
 @asynccontextmanager
@@ -32,6 +34,8 @@ register_error_handlers(app)
 
 app.include_router(projects.router)
 app.include_router(documents.router)
+app.include_router(handovers.router)
+app.include_router(demo.router)
 
 
 @app.get("/api/health")
