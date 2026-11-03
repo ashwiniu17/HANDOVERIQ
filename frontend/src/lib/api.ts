@@ -1,5 +1,7 @@
+
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "https://handoveriq-backend.onrender.com";
 
 /** One entry of `details` in the backend's error format. */
 export type ApiErrorDetail = { field: string; message: string };
@@ -66,7 +68,7 @@ export async function apiFetch<T>(
     try {
       parsed = (await response.json()) as ApiErrorBody;
     } catch {
-      parsed = null; // not JSON (for example an HTML error page)
+      parsed = null;
     }
     const error = parsed?.error;
     throw new ApiError(
