@@ -20,7 +20,8 @@ export default function DemoDataButton({ projectId, onAdded }: Props) {
 
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        "https://handoveriq-backend.onrender.com";
 
       const response = await fetch(
         `${baseUrl}/api/projects/${projectId}/demo-data`,

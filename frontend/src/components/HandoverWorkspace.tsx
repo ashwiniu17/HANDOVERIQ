@@ -6,7 +6,8 @@ import type { ChangeEvent } from "react";
 import DemoDataButton from "./DemoDataButton";
 
 const API =
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://handoveriq-backend.onrender.com";
 
 type DocumentItem = {
   id: number;
@@ -225,7 +226,6 @@ export default function HandoverWorkspace({
         { method: "POST" }
       );
 
-      // Fetch the newly generated report.
       await loadHandover();
 
       setMessage(
