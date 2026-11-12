@@ -348,7 +348,7 @@ Potential improvements include:
 
 **Status:** Under Active Development
 
-**Hackathon:** WCC Forge 48 – Round 2
+
 
 HANDOVERIQ is being developed as a practical solution to improve project continuity and knowledge transfer through intelligent document processing and structured knowledge management.
 
@@ -364,7 +364,7 @@ Add the names and contributions of the actual team members here.
 
 ## 15. License
 
-This project is developed as part of WCC Forge 48 Hackathon.
+
 
 Add an appropriate open-source license if you intend to distribute the project under one.
 
