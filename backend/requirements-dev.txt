@@ -1,0 +1,5 @@
+# Development and CI dependencies. Install with:  python -m pip install -r requirements-dev.txt
+-r requirements.txt
+pytest==9.2.0
+# The Anthropic SDK and FastAPI's test client both use this HTTP library.
+httpx2==2.16.0

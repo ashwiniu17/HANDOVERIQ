@@ -1,0 +1,17 @@
+# HANDOVERIQ backend: runtime dependencies (direct dependencies only).
+# Install with:  python -m pip install -r requirements.txt
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.6
+psycopg[binary]==3.3.6
+alembic==1.20.1
+pydantic==2.14.2
+email-validator==2.3.0
+python-dotenv==1.2.4
+python-multipart==0.0.33
+PyJWT==2.15.1
+argon2-cffi==25.1.0
+pymupdf==2.0
+python-docx==1.2.0
+reportlab==5.1.0
+anthropic==2.3.0
